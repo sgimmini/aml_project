@@ -148,3 +148,6 @@ dmypy.json
 
 # npy
 *.npy
+
+# models
+models/*
