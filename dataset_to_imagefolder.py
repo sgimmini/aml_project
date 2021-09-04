@@ -53,7 +53,7 @@ def covidnet_create_imagefolder_dataset(txt_file, target_name = "COVIDNet_ImageF
     print(f"Created {counter} symlinks for {txt_file}") 
 
 
-def chexpert_create_imagefolder_dataset(csv_file, target_name = "chexpert_ImageFolder"):
+def chexpert_create_imagefolder_dataset(csv_file, image_source, target_name = "chexpert_ImageFolder"):
     df = pd.read_csv(csv_file, usecols=["Path", 
                                         "No Finding", 
                                         "Lung Opacity",
@@ -82,7 +82,7 @@ def chexpert_create_imagefolder_dataset(csv_file, target_name = "chexpert_ImageF
     # iterate over all df rows
     counter = 0
     for i, line in tqdm(df.iterrows(), position=0):
-        src_image_path = os.path.join(os.getcwd(), line[0])
+        src_image_path = os.path.join(image_source, line[0])
         # replace / with _ for individual image names
         image_name = "_".join(line[0].split("/")[-3:])
 
@@ -109,12 +109,12 @@ def chexpert_create_imagefolder_dataset(csv_file, target_name = "chexpert_ImageF
 if __name__ == "__main__":
 
     # covidnet
-    covidnet_create_imagefolder_dataset("train_split.txt")
-    covidnet_create_imagefolder_dataset("test_split.txt")
+    #covidnet_create_imagefolder_dataset("train_split.txt")
+    #covidnet_create_imagefolder_dataset("test_split.txt")
 
     # chexpert
-    train_csv = "./chexpert/train.csv"
-    val_csv = "./chexpert/valid.csv"
+    train_csv = "/export/scratch/sgimmini/chexpert/CheXpert-v1.0-small/train.csv"
+    val_csv = "/export/scratch/sgimmini/chexpert/CheXpert-v1.0-small/valid.csv"
 
-    chexpert_create_imagefolder_dataset(train_csv)
-    chexpert_create_imagefolder_dataset(val_csv)
+    chexpert_create_imagefolder_dataset(train_csv, image_source="/export/scratch/sgimmini/chexpert/")
+    chexpert_create_imagefolder_dataset(val_csv, image_source="/export/scratch/sgimmini/chexpert/")
