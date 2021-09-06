@@ -19,6 +19,9 @@ compose = transforms.Compose([transforms.Resize((224, 224)),
 traindata = ImageFolder("COVIDNet_ImageFolder/train", transform=compose)
 testdata = ImageFolder("COVIDNet_ImageFolder/test", transform=compose)
 
+train_len = int(0.9*len(traindata))
+traindata, validdata = torch.utils.data.random_split(traindata, [train_len, len(traindata)-train_len], generator=torch.Generator().manual_seed(42))
+
 # init dataloader
 train_loader = DataLoader(traindata, batch_size=64, shuffle=True)
 test_loader = DataLoader(testdata)
