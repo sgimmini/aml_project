@@ -6,6 +6,9 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter()
+
 NUM_EPOCHS = 50
 # transformation
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -23,7 +26,8 @@ train_len = int(0.9*len(traindata))
 traindata, validdata = torch.utils.data.random_split(traindata, [train_len, len(traindata)-train_len], generator=torch.Generator().manual_seed(42))
 
 # init dataloader
-train_loader = DataLoader(traindata, batch_size=64, shuffle=True)
+train_loader = DataLoader(traindata, batch_size=32, shuffle=True)
+valid_loader = DataLoader(validdata, batch_size=32, shuffle=True)
 test_loader = DataLoader(testdata)
 
 # init model and copy weights
@@ -48,21 +52,46 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(network.parameters(), lr=0.0002)
 
 for epoch in range(NUM_EPOCHS):
-    sum_loss = 0
-    total = 0
-    correct = 0
+    network.train()
+    train_loss = 0
+    train_total = 0
+    train_correct = 0
     for data, label in tqdm(train_loader):
         data = data.cuda()
         label = label.cuda()
         out = network(data)
         loss = criterion(out, label)
-        sum_loss += loss.item()
+        train_loss += loss.item()
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         _, predicted = torch.max(out.data, 1)
-        total += label.size(0)
-        correct += (predicted == label).sum().item()
+        train_total += label.size(0)
+        train_correct += (predicted == label).sum().item()
+    print('Train ===============================')
+    print(f'Accuracy:{train_correct/train_total}')
+    writer.add_scalar("Accuracy/train", train_correct/train_total, epoch)
+    print(f"epoch: {epoch}, Train Loss: {train_loss/len(train_loader)}")
+    writer.add_scalar("Loss/train", train_loss/len(train_loader), epoch)
+
+    valid_loss = 0
+    valid_total = 0
+    valid_correct = 0
+    for data, label in tqdm(valid_loader):
+        network.eval()
+        data = data.cuda()
+        label = label.cuda()
+        out = network(data)
+        loss = criterion(out, label)
+        valid_loss += loss.item()
+        _, predicted = torch.max(out.data, 1)
+        valid_total += label.size(0)
+        valid_correct += (predicted == label).sum().item()
+    print('Validation ==========================')
+    print(f'Accuracy:{valid_correct/valid_total}')
+    writer.add_scalar("Accuracy/valid", valid_correct/valid_total, epoch)
+    print(f"epoch: {epoch}, Validation Loss: {valid_loss/len(valid_loader)}")
+    writer.add_scalar("Loss/valid", valid_loss/len(valid_loader), epoch)
 
     print(f'Accuracy:{correct/total}')
     print(f"epoch: {epoch}, Train Loss: {sum_loss/len(train_loader)}")
