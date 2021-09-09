@@ -93,6 +93,4 @@ for epoch in range(NUM_EPOCHS):
     print(f"epoch: {epoch}, Validation Loss: {valid_loss/len(valid_loader)}")
     writer.add_scalar("Loss/valid", valid_loss/len(valid_loader), epoch)
 
-    print(f'Accuracy:{correct/total}')
-    print(f"epoch: {epoch}, Train Loss: {sum_loss/len(train_loader)}")
     torch.save(network.state_dict(), f"models/converted_vissl_swav_covid_e950_e{epoch}_fc_only.torch")
