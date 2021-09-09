@@ -5,11 +5,15 @@ from torchvision import transforms, models
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+import os
 
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
 
-NUM_EPOCHS = 50
+# - parameters
+NUM_EPOCHS = 100
+experiment_name = "train_full"
+
 # transformation
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
@@ -51,12 +55,15 @@ print(network)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(network.parameters(), lr=0.0002)
 
+best_valid_loss = 1000
+best_epoch = 0
+
 for epoch in range(NUM_EPOCHS):
     network.train()
     train_loss = 0
     train_total = 0
     train_correct = 0
-    for data, label in tqdm(train_loader):
+    for data, label in tqdm(train_loader, desc="Train", leave=False):
         data = data.cuda()
         label = label.cuda()
         out = network(data)
@@ -77,7 +84,7 @@ for epoch in range(NUM_EPOCHS):
     valid_loss = 0
     valid_total = 0
     valid_correct = 0
-    for data, label in tqdm(valid_loader):
+    for data, label in tqdm(valid_loader, desc="Valid", leave=False):
         network.eval()
         data = data.cuda()
         label = label.cuda()
@@ -93,4 +100,20 @@ for epoch in range(NUM_EPOCHS):
     print(f"epoch: {epoch}, Validation Loss: {valid_loss/len(valid_loader)}")
     writer.add_scalar("Loss/valid", valid_loss/len(valid_loader), epoch)
 
-    torch.save(network.state_dict(), f"models/converted_vissl_swav_covid_e950_e{epoch}_fc_only.torch")
+    # - saving
+    save_path = f"models/{experiment_name}"
+    if not os.path.isdir(save_path):
+        os.makedirs(save_path)
+
+    # - save best epoch
+    if valid_loss < best_valid_loss:
+        best_valid_loss = valid_loss
+        previous_best = f"{save_path}/converted_vissl_swav_covid_e950_e{best_epoch}_best.torch"
+        if os.path.exists(previous_best):
+            os.remove(previous_best)
+        best_epoch = epoch
+        torch.save(network.state_dict(), f"{save_path}/converted_vissl_swav_covid_e950_e{epoch}_best.torch")
+
+    # save only every 10th epoch
+    if epoch % 10 == 0:
+        torch.save(network.state_dict(), f"{save_path}/converted_vissl_swav_covid_e950_e{epoch}.torch")
