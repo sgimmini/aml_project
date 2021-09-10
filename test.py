@@ -6,7 +6,12 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
-NUM_EPOCHS = 50
+import seaborn as sns
+
+# - parameters
+model_to_test = "models/train_full/converted_vissl_swav_covid_e950_e90.torch"
+
+
 # transformation
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
@@ -25,7 +30,7 @@ test_loader = DataLoader(testdata)
 # init model and copy weights
 network = models.resnet50(pretrained=False)
 network.fc = nn.Linear(2048, 3)
-network.load_state_dict(torch.load("models/converted_vissl_swav_covid_e950_e0_fc_only.torch"))
+network.load_state_dict(torch.load(model_to_test))
 network.eval()
 network = network.cuda()
 
