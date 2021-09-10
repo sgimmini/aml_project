@@ -115,12 +115,12 @@ for epoch in range(NUM_EPOCHS):
     # - save best epoch
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
-        previous_best = f"{save_path}/{pretrained_model_name}_e{best_epoch}_best.torch"
+        previous_best = f"{save_path}/model_e{best_epoch}_best.torch"
         if os.path.exists(previous_best):
             os.remove(previous_best)
         best_epoch = epoch
-        torch.save(network.state_dict(), f"{save_path}/{pretrained_model_name}_e{epoch}_best.torch")
+        torch.save(network.state_dict(), f"{save_path}/model_e{epoch}_best.torch")
 
     # save only every 10th epoch
     if epoch % 10 == 0:
-        torch.save(network.state_dict(), f"{save_path}/{pretrained_model_name}_e{epoch}.torch")
+        torch.save(network.state_dict(), f"{save_path}/model_e{epoch}.torch")
