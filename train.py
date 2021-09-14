@@ -13,15 +13,16 @@ writer = SummaryWriter()
 
 # - parameters
 NUM_EPOCHS = 100
-experiment_name = "plain_resnet_ImageNet"
-pretrained_model = "converted_vissl_swav_covid_e950.torch"
+depth = 50
+val_size = 0.1
+
 pretrained_model_name = pretrained_model.split(".")[0]
 pretrained_model_path = f"path/{pretrained_model}"
 
 current_time = datetime.now().strftime('%b%d_%H-%M-%S')
 writer = SummaryWriter(log_dir=f"runs/{current_time}_{experiment_name}")
 
-# transformation
+# - transformation
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
 
@@ -29,22 +30,27 @@ compose = transforms.Compose([transforms.Resize((224, 224)),
                                transforms.ToTensor(),
                                normalize])
 
-# init datasets
+# - init datasets
 traindata = ImageFolder("COVIDNet_ImageFolder/train", transform=compose)
 testdata = ImageFolder("COVIDNet_ImageFolder/test", transform=compose)
 
-train_len = int(0.9*len(traindata))
+train_len = int((1.0-val_size)*len(traindata))
 traindata, validdata = torch.utils.data.random_split(traindata, [train_len, len(traindata)-train_len], generator=torch.Generator().manual_seed(42))
 
-# init dataloader
+# - init dataloader
 train_loader = DataLoader(traindata, batch_size=64, shuffle=True)
 valid_loader = DataLoader(validdata, batch_size=64, shuffle=True)
 test_loader = DataLoader(testdata)
 
-# init model and copy weights
-network = models.resnet50(pretrained=True)
-#network.load_state_dict(torch.load(pretrained_model_path), strict=False)
-network.fc = nn.Linear(2048, 3)
+# - init model and copy weights
+if depth == 18:
+    network = models.resnet18(pretrained=False)
+    network.fc = nn.Linear(512, 3)
+elif depth == 50:
+    network = models.resnet50(pretrained=True)
+    network.fc = nn.Linear(2048, 3)
+
+network.load_state_dict(torch.load(pretrained_model_path), strict=False)
 network.fc.weight.data.normal_(mean=0.0, std=0.01)
 network.fc.bias.data.zero_()
 
@@ -121,6 +127,6 @@ for epoch in range(NUM_EPOCHS):
         best_epoch = epoch
         torch.save(network.state_dict(), f"{save_path}/model_e{epoch}_best.torch")
 
-    # save only every 10th epoch
+    # - save only every 10th epoch
     if epoch % 10 == 0:
         torch.save(network.state_dict(), f"{save_path}/model_e{epoch}.torch")
