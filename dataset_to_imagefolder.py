@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from tqdm import tqdm
 
-def covidnet_create_imagefolder_dataset(txt_file, target_name = "COVIDNet_ImageFolder", image_source = "covid_data"):
+def covidnet_create_imagefolder_dataset(txt_file, target_name = "COVIDNet_ImageFolder", image_source = "covid_data", binary = False):
     """
     Function to create a folderstructure possible to use for vissl
     """
@@ -32,6 +32,10 @@ def covidnet_create_imagefolder_dataset(txt_file, target_name = "COVIDNet_ImageF
                 continue
 
             _, image_, class_, _ = splitted
+
+            if binary:
+                if not class_ == "COVID-19":
+                    class_ = "NO_COVID-19"
 
             # dirs for classes
             class_dir = os.path.join(split_dir, class_)
