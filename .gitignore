@@ -151,3 +151,6 @@ dmypy.json
 
 # models
 models/*
+
+# TB runs
+runs/*
