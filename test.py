@@ -3,10 +3,8 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms, models
 import torch.nn as nn
-import torch.optim as optim
 from tqdm import tqdm
-
-import seaborn as sns
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
 # - parameters
 model_to_test = "models/train_full/converted_vissl_swav_covid_e950_e90.torch"
@@ -36,6 +34,9 @@ network = network.cuda()
 
 total = 0
 correct = 0
+
+y_pred = []
+y_true = []
 with torch.no_grad():
     for data, label in tqdm(test_loader):
         data = data.cuda()
@@ -44,5 +45,15 @@ with torch.no_grad():
         _, predicted = torch.max(out.data, 1)
         total += label.size(0)
         correct += (predicted == label).sum().item()
+        y_true.extend(label.cpu())
+        y_pred.extend(predicted.cpu())
 
     print(f'Accuracy:{correct/total}')
+
+print(classification_report(y_true, y_pred, target_names=["COVID", "normal", "pneumonia"]))
+cf_matrix = confusion_matrix(y_true, y_pred, normalize='true')
+disp = ConfusionMatrixDisplay(confusion_matrix=cf_matrix, display_labels=["COVID", "normal", "pneumonia"])
+# TODO set colorscheme and fix it to percentages
+disp.plot()
+fig = disp.figure_
+fig.savefig('cf_matrix.jpg')
