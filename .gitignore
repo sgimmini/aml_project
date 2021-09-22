@@ -154,3 +154,5 @@ models/*
 
 # TB runs
 runs/*
+
+embeddings/*
