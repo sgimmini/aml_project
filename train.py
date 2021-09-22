@@ -7,17 +7,17 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 import os
-
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter()
 
 # - parameters
 NUM_EPOCHS = 100
 depth = 50
-val_size = 0.1
+val_size = 0.2
 
+experiment_name = "simclr_e1950_trained_full"
+pretrained_model = "converted_vissl_simclr_covid_e1950.torch"
 pretrained_model_name = pretrained_model.split(".")[0]
-pretrained_model_path = f"path/{pretrained_model}"
+pretrained_model_path = f"vissl_models/{pretrained_model}"
 
 current_time = datetime.now().strftime('%b%d_%H-%M-%S')
 writer = SummaryWriter(log_dir=f"runs/{current_time}_{experiment_name}")
