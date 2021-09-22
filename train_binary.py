@@ -13,17 +13,15 @@ from libauc.optimizers import PESG
 
 from torch.utils.tensorboard import SummaryWriter
 
-#pretrained_model_path = f"/export/home/sgimmini/visiexp-backend-v2/experiments/base/00_00_base/vissl_models/{pretrained_model}"
-
 # - parameters
 NUM_EPOCHS = 100
 depth = 50
 use_libauc = False
 val_size = 0.2
 
-experiment_name = "binary_swav_e950_trained_full_20val"
-pretrained_model = "converted_vissl_swav_covid_e950.torch"
-pretrained_model_path = f"/export/home/sgimmini/visiexp-backend-v2/experiments/base/00_00_base/vissl_models/{pretrained_model}"
+experiment_name = "binary_deepcluster_e950_trained_full_20val"
+pretrained_model = "converted_vissl_deepcluster_covid_e950.torch"
+pretrained_model_path = f"vissl_models/{pretrained_model}"
 
 current_time = datetime.now().strftime('%b%d_%H-%M-%S')
 writer = SummaryWriter(log_dir=f"runs/{current_time}_{experiment_name}")
@@ -43,12 +41,12 @@ train_len = int((1.0-val_size)*len(traindata))
 traindata, validdata = torch.utils.data.random_split(traindata, [train_len, len(traindata)-train_len], generator=torch.Generator().manual_seed(42))
 
 # init dataloader
-train_loader = DataLoader(traindata, batch_size=50, shuffle=True)
-valid_loader = DataLoader(validdata, batch_size=50, shuffle=True)
+train_loader = DataLoader(traindata, batch_size=32, shuffle=True)
+valid_loader = DataLoader(validdata, batch_size=32, shuffle=True)
 
 # init model and copy weights
 if depth == 18:
-    network = models.resnet18(pretrained=False)
+    network = models.resnet18(pretrained=True)
     network.fc = nn.Linear(512, 2)
 if depth == 50:
     network = models.resnet50(pretrained=True)
