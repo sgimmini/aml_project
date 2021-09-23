@@ -25,18 +25,18 @@ mpl.rc("ytick", labelsize=20)
 
 # - parameters
 depth = 18
-binary = True
-model_name = "binary_resnet18_swav_e950"
-#model_path = f"models/{model_name}/model_e90.torch"
-model_path = "/export/home/sgimmini/visiexp-backend-v2/experiments/base/00_00_base/vissl_models/converted_vissl_swav_covid_resnet18_e950.torch"
-output_name = ""
+binary = False
+model_name = "covid_resnet18_e950_trained_full"
+model_path = f"models/{model_name}/model_e90.torch"
+#model_path = "vissl_models/converted_vissl_swav_covid_resnet18_e950.torch"
+output_name = "train"
 save_pdf = True
 
 if binary:
-    dataset = "COVIDNet_ImageFolder_binary/test"
+    dataset = "COVIDNet_ImageFolder_binary/train"
     classes = 2
 else:
-    dataset = "COVIDNet_ImageFolder/test"
+    dataset = "COVIDNet_ImageFolder/train"
     classes = 3
 
 if not os.path.isdir("embeddings"):
@@ -111,7 +111,7 @@ elif depth == 50:
 if not model_path == "":
     network.load_state_dict(torch.load(model_path), strict=False)
 
-#network.fc = Identity()
+network.fc = Identity()
 network = network.cuda()
 network.eval()
 
