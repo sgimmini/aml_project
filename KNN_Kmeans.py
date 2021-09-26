@@ -10,10 +10,9 @@ import umap
 import clip
 import faiss
 import torch
-import os
 import numpy as np
 import torch.nn as nn
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
+from sklearn.metrics import classification_report
 from sklearn.neighbors import KNeighborsClassifier
 
 # - to overwrite classification layer
@@ -25,8 +24,9 @@ class Identity(nn.Module):
         return x
 
 # - parameters 
-binary = True
+binary = False
 use_clip = True
+
 use_umap = False
 use_kmeans = False
 
@@ -35,11 +35,13 @@ use_kmeans = False
 model_path = ""
 
 if binary:
-    dataset = "COVIDNet_ImageFolder_binary/test"
+    traindataset = "COVIDNet_ImageFolder_binary/train"
+    testdataset = "COVIDNet_ImageFolder_binary/test"
     classes = 2
     label_names = ["COVID-19", "healthy"]
 else:
-    dataset = "COVIDNet_ImageFolder/test"
+    traindataset = "COVIDNet_ImageFolder/train"
+    testdataset = "COVIDNet_ImageFolder/test"
     classes = 3
     label_names = ["COVID-19", "normal", "pneumonia"]
 
@@ -68,14 +70,16 @@ else:
 
 
 # - init datasets
-traindata = ImageFolder(dataset, transform=preprocess)
+traindata = ImageFolder(traindataset, transform=preprocess)
+testdata = ImageFolder(testdataset, transform=preprocess)
 
 # init dataloader
-train_loader = DataLoader(traindata, batch_size=64, shuffle=False)
+trainloader = DataLoader(traindata, batch_size=64, shuffle=False)
+testloader = DataLoader(testdata, batch_size=64, shuffle=False)
 
-feats = []
-labels = []
-for data, label in tqdm(train_loader):
+trainfeats = []
+trainlabels = []
+for data, label in tqdm(trainloader):
 
     if use_clip:    
         with torch.no_grad():
@@ -83,34 +87,56 @@ for data, label in tqdm(train_loader):
     else:
         out = model(data.cuda())
 
-    feats.append(out.detach().cpu())
-    labels.append(label)
+    trainfeats.append(out.detach().cpu())
+    trainlabels.append(label)
 
-feats = torch.cat(feats)
-feats = feats.view(feats.shape[0], -1).numpy()
 
-labels = torch.cat(labels).numpy()
+testfeats = []
+testlabels = []
+for data, label in tqdm(testloader):
+
+    if use_clip:    
+        with torch.no_grad():
+            out = model.encode_image(data)
+    else:
+        out = model(data.cuda())
+
+    testfeats.append(out.detach().cpu())
+    testlabels.append(label)
+
+testfeats = torch.cat(testfeats)
+testfeats = testfeats.view(testfeats.shape[0], -1).numpy()
+
+testlabels = torch.cat(testlabels).numpy()
+testreverse_labels = {v:k for k,v in testdata.class_to_idx.items()}
+testlabels = [testreverse_labels.get(item, item) for item in testlabels]
+
+# - flatten data
+trainfeats = torch.cat(trainfeats)
+trainfeats = trainfeats.view(trainfeats.shape[0], -1).numpy()
+
+trainlabels = torch.cat(trainlabels).numpy()
 reverse_labels = {v:k for k,v in traindata.class_to_idx.items()}
-labels = [reverse_labels.get(item, item) for item in labels]
+trainlabels = [reverse_labels.get(item, item) for item in trainlabels]
 
 if use_umap:
-    embedding = umap.UMAP(verbose=True).fit_transform(feats)
-    feats = embedding
+    embedding = umap.UMAP(verbose=True).fit_transform(testfeats)
+    testfeats = embedding
 
 if use_kmeans:
-    kmeans = faiss.Kmeans(d=feats.shape[1], k=classes)
-    kmeans.train(feats.astype(np.float32))
+    kmeans = faiss.Kmeans(d=testfeats.shape[1], k=classes)
+    kmeans.train(testfeats.astype(np.float32))
 
-    _, c_labels = kmeans.index.search(feats.astype(np.float32), 1)
+    _, c_labels = kmeans.index.search(testfeats.astype(np.float32), 1)
     c_labels = c_labels.flatten()
 
     clustering = {cl: np.where(c_labels == cl)[0] for cl in np.unique(c_labels)}
 
 
-    pred_labels = np.zeros_like(labels)
+    pred_labels = np.zeros_like(testlabels)
     for c_idcs in clustering.values():
 
-        gt = np.array(labels)
+        gt = np.array(testlabels)
         gt_labels = gt[c_idcs]
         label_counter = Counter(gt_labels)
         pred_lbl = list(label_counter.keys())[np.argmax(list(label_counter.values()))]
@@ -118,14 +144,14 @@ if use_kmeans:
 
 else:
     neigh = KNeighborsClassifier(n_neighbors=3)
-    #neigh.fit(feats, labels)
-    pred_labels = neigh.predict(feats)
+    neigh.fit(trainfeats, trainlabels)
+    pred_labels = neigh.predict(testfeats)
 
 
 #print(labels)
 #print(pred_labels)
 #exit()
 
-print(classification_report(labels, pred_labels, target_names=label_names))
+print(classification_report(testlabels, pred_labels, target_names=label_names))
 
 
