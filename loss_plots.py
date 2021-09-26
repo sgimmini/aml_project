@@ -4,12 +4,16 @@ import os
 import matplotlib.pyplot as plt
 sns.set_style(style="darkgrid")
 
+choice = "binary"
+
 df_full = pd.DataFrame()
-for c in os.listdir("TB_csvs/triple/"):
-    df = pd.read_csv(os.path.join("TB_csvs/triple", c))
+for c in os.listdir(f"TB_csvs/{choice}/"):
+    df = pd.read_csv(os.path.join(f"TB_csvs/{choice}", c))
     df.drop("Wall time", axis=1, inplace=True)
     df["Model"] = str(c.split(".")[0])
     df = df.rename(columns={"Value": "Loss", "Step": "Epoch"})
+
+    #df = df.drop(df[df.Epoch > 20].index)
 
     df_full = pd.concat([df_full, df])
 
